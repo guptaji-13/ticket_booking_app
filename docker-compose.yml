@@ -1,0 +1,190 @@
+services:
+    # =====================
+    # PostgreSQL
+    # =====================
+    postgres:
+        image: postgres:17
+        container_name: postgres
+        restart: unless-stopped
+        env_file:
+            - .env
+        environment:
+            POSTGRES_USER: ${POSTGRES_USER}
+            POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+            POSTGRES_DB: ${POSTGRES_DB}
+            POSTGRES_PORT: ${POSTGRES_PORT}
+        ports:
+            - "${POSTGRES_PORT}:5432"
+        volumes:
+            - postgres_data:/var/lib/postgresql/data
+        healthcheck:
+            test:
+                [
+                    "CMD-SHELL",
+                    "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}",
+                ]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+
+    # =====================
+    # Redis
+    # =====================
+    redis:
+        image: redis:7.4
+        container_name: redis
+        restart: unless-stopped
+        env_file:
+            - .env
+        ports:
+            - "${REDIS_PORT}:6379"
+        volumes:
+            - redis_data:/data
+        healthcheck:
+            test: ["CMD", "redis-cli", "ping"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+
+    # =====================
+    # Cassandra
+    # =====================
+    cassandra:
+        image: cassandra:5.0
+        container_name: cassandra
+        restart: unless-stopped
+        env_file:
+            - .env
+        environment:
+            - CASSANDRA_CLUSTER_NAME=EventCluster
+            - CASSANDRA_DC=${CASS_DATA_CENTER}
+            - CASSANDRA_ENDPOINT_SNITCH=GossipingPropertyFileSnitch
+        ports:
+            - "${CASSANDRA_PORT}:9042"
+        volumes:
+            - cassandra_data:/var/lib/cassandra
+        healthcheck:
+            test: ["CMD-SHELL", "cqlsh -e 'DESCRIBE KEYSPACES'"]
+            interval: 15s
+            timeout: 10s
+            retries: 10
+
+    # =====================
+    # Elasticsearch
+    # =====================
+    elasticsearch:
+        image: docker.elastic.co/elasticsearch/elasticsearch-wolfi:9.2.0
+        container_name: elasticsearch
+        environment:
+            - discovery.type=single-node
+            - xpack.security.enabled=false # disable auth for dev
+            - ES_JAVA_OPTS=-Xms1g -Xmx1g # JVM memory
+        ports:
+            - "9200:9200"
+        volumes:
+            - es_data:/usr/share/elasticsearch/data
+        healthcheck:
+            test:
+                [
+                    "CMD-SHELL",
+                    'curl -s http://localhost:9200/_cluster/health | grep -q ''"status":"green"''',
+                ]
+            interval: 10s
+            timeout: 5s
+            retries: 10
+
+    # =====================
+    # Booking Service
+    # =====================
+    booking-service:
+        build:
+            context: .
+            dockerfile: ./booking_service/Dockerfile
+        container_name: booking-service
+        depends_on:
+            postgres:
+                condition: service_healthy
+            redis:
+                condition: service_healthy
+            event-service:
+                condition: service_started
+        ports:
+            - "${BOOKING_HTTP_PORT}:3000"
+        env_file:
+            - .env
+        environment:
+            - PORT=${BOOKING_HTTP_PORT}
+            - NODE_ENV=${NODE_ENV}
+            - POSTGRES_URL=${POSTGRES_URL}
+            - JWT_ACCESS_SECRET=${JWT_ACCESS_SECRET}
+            - GRPC_SERVER_HOST=${GRPC_SERVER_HOST}
+            - GRPC_SERVER_PORT=${GRPC_SERVER_PORT}
+            - REDIS_URL=redis://redis:6379
+        volumes:
+            - ./booking_service:/app
+            - /app/node_modules
+        command: npm run dev
+        tty: true
+
+    # =====================
+    # Event Service
+    # =====================
+    event-service:
+        build:
+            context: .
+            dockerfile: ./event_service/Dockerfile
+        container_name: event-service
+        depends_on:
+            cassandra:
+                condition: service_healthy
+            redis:
+                condition: service_healthy
+        ports:
+            - "${EVENT_HTTP_PORT}:3001"
+            - "${GRPC_SERVER_PORT}:50051"
+        env_file:
+            - .env
+        environment:
+            - PORT=${EVENT_HTTP_PORT}
+            - NODE_ENV=${NODE_ENV}
+            - CASS_CONTACT_POINT_001=${CASS_CONTACT_POINT_001}
+            - CASS_DATA_CENTER=${CASS_DATA_CENTER}
+            - CASS_KEYSPACE=${CASS_KEYSPACE}
+            - GRPC_SERVER_PORT=${GRPC_SERVER_PORT}
+            - REDIS_URL=redis://redis:6379
+        volumes:
+            - ./event_service:/app
+            - /app/node_modules
+        command: npm run dev
+        tty: true
+
+    search-service:
+        build:
+            context: .
+            dockerfile: ./search_service/Dockerfile
+        container_name: search-service
+        depends_on:
+            elasticsearch:
+                condition: service_healthy
+            redis:
+                condition: service_healthy
+        ports:
+            - "${SEARCH_HTTP_PORT}:3002"
+        env_file:
+            - .env
+        environment:
+            - PORT=${SEARCH_HTTP_PORT}
+            - NODE_ENV=${NODE_ENV}
+            - REDIS_URL=${REDIS_URL}
+            - ELASTIC_URL=${ELASTIC_URL}
+        volumes:
+            - ./search_service:/app
+            - /app/node_modules
+        command: npm run dev
+        tty: true
+
+volumes:
+    postgres_data:
+    redis_data:
+    cassandra_data:
+    es_data:

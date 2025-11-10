@@ -1,0 +1,61 @@
+syntax = "proto3";
+
+package event;
+
+service EventService {
+  // Fetch seat layout for a show
+  rpc GetSeatLayout (ShowRequest) returns (SeatLayoutResponse);
+
+  // Check if specific seats are available
+  rpc CheckSeatAvailability (SeatAvailabilityRequest) returns (SeatAvailabilityResponse);
+
+  // Update seat status (lock / release / confirm)
+  rpc UpdateSeatStatus (SeatStatusUpdateRequest) returns (SeatStatusUpdateResponse);
+}
+
+// -------------------------
+// Message Definitions
+// -------------------------
+
+message ShowRequest {
+  string showId = 1;
+}
+
+message SeatLayoutResponse {
+  string showId = 1;
+  string layoutJson = 2; // compressed base64 JSON, same as Cassandra
+}
+
+message SeatAvailabilityRequest {
+  string showId = 1;
+  repeated string seatIds = 2;
+}
+
+message SeatAvailabilityResponse {
+  string showId = 1;
+  repeated SeatStatus seats = 2;
+}
+
+message SeatStatus {
+  string seatId = 1;
+  string status = 2; // available, booked
+}
+
+message SeatStatusUpdateRequest {
+  string showId = 1;
+  repeated SeatStatus updates = 2;
+}
+
+message SeatStatusUpdateResponse {
+  bool success = 1;
+}
+
+message ReserveSeatRequest {
+  string showId = 1;
+  repeated string seatIds = 2;
+  int32 ttl = 3;
+}
+
+message ReserveSeatResponse {
+  bool success = 1;
+}

@@ -1,0 +1,229 @@
+{
+	"info": {
+		"_postman_id": "cab61fff-45b0-4230-8320-de17d3c2fd26",
+		"name": "Event Service",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "46777599",
+		"_collection_link": "https://abcxyz-2114953.postman.co/workspace/Abc-Xyz's-Workspace~b5747b00-eb07-4e4e-8866-a2aa4370acc7/collection/46777599-cab61fff-45b0-4230-8320-de17d3c2fd26?action=share&source=collection_link&creator=46777599"
+	},
+	"item": [
+		{
+			"name": "New Event",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"description\": \"Comedy Show by Anubhav Singh Bassi\",\r\n    \"title\": \"Bas kar Bassi\",\r\n    \"category\": \"standup comedy\",\r\n    \"language\": \"Hindi\",\r\n    \"durationMinutes\": 120,\r\n    \"metadata\": {\r\n        \"artist\": \"Anubhav Singh Bassi\",\r\n        \"genre\": \"Comedy\"\r\n    }\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{baseURL}}/api/events",
+					"host": [
+						"{{baseURL}}"
+					],
+					"path": [
+						"api",
+						"events"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Event by ID",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseURL}}/api/events/details/019a5396-5f16-735a-99f9-67c1342531ed",
+					"host": [
+						"{{baseURL}}"
+					],
+					"path": [
+						"api",
+						"events",
+						"details",
+						"019a5396-5f16-735a-99f9-67c1342531ed"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "New Show",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"eventId\": \"019a5396-5f16-735a-99f9-67c1342531ed\",\r\n    \"venueId\": \"019a58a2-beae-70c9-aed7-7bd50179d288\",\r\n    \"screenDetails\": {\r\n        \"id\": \"019a5883-c047-71fe-a7b7-243640cdd6e5\",\r\n        \"name\": \"Hall 3\"\r\n    },\r\n    \"showTimestamp\": \"2025-11-10T13:00:00.000Z\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{baseURL}}/api/shows",
+					"host": [
+						"{{baseURL}}"
+					],
+					"path": [
+						"api",
+						"shows"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "New Venue",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"name\": \"Comedy Central\",\r\n    \"city\": \"Jaipur\",\r\n    \"address\": \"3rd Floor, Right Wing, WTP Mall, Malviya Nagar\",\r\n    \"totalScreens\": 3,\r\n    \"metadata\": {\r\n        \"screens\": [\r\n            {\r\n                \"id\": \"019a5882-77f0-7ee1-8192-05f94727890d\",\r\n                \"name\": \"Hall 1\"\r\n            },\r\n            {\r\n                \"id\": \"019a5883-394a-717c-a2b1-1c4d07bac274\",\r\n                \"name\": \"Hall 2\"\r\n            },\r\n            {\r\n                \"id\": \"019a5883-c047-71fe-a7b7-243640cdd6e5\",\r\n                \"name\": \"Hall 3\"\r\n            }\r\n        ]\r\n    }\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{baseURL}}/api/venues",
+					"host": [
+						"{{baseURL}}"
+					],
+					"path": [
+						"api",
+						"venues"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Venue by ID",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseURL}}/api/venues/019a58a2-beae-70c9-aed7-7bd50179d288",
+					"host": [
+						"{{baseURL}}"
+					],
+					"path": [
+						"api",
+						"venues",
+						"019a58a2-beae-70c9-aed7-7bd50179d288"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Show by ID",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseURL}}/api/shows/019a58ac-21a1-7555-8abf-546a575cb276",
+					"host": [
+						"{{baseURL}}"
+					],
+					"path": [
+						"api",
+						"shows",
+						"019a58ac-21a1-7555-8abf-546a575cb276"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Update Seat Schema",
+			"request": {
+				"method": "PUT",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"snapshotJson\": {\r\n        \"priceMap\": {\r\n            \"economy\": 100,\r\n            \"premium\": 200,\r\n            \"recliner\": 300\r\n        },\r\n        \"rows\": [\r\n            {\r\n                \"row\": \"A\",\r\n                \"priceCategory\": \"economy\",\r\n                \"layout\": [\r\n                    {\r\n                        \"id\": \"019a58cb-8bfd-7344-964e-a98a51a0d639\",\r\n                        \"name\": \"A1\"\r\n                    },\r\n                    {\r\n                        \"id\": \"019a58cb-a155-7507-aaab-acdb0fbff200\",\r\n                        \"name\": \"A2\"\r\n                    },\r\n                    null,\r\n                    {\r\n                        \"id\": \"019a58cb-a5bb-777d-9636-5dabf0a5bcf3\",\r\n                        \"name\": \"A3\"\r\n                    }\r\n                ]\r\n            },\r\n            null,\r\n            {\r\n                \"row\": \"B\",\r\n                \"priceCategory\": \"premium\",\r\n                \"layout\": [\r\n                    {\r\n                        \"id\": \"019a58cb-a9cd-7628-842d-9ac25898c17e\",\r\n                        \"name\": \"B1\"\r\n                    },\r\n                    {\r\n                        \"id\": \"019a58cb-ad9d-759f-b039-d80644f8f84b\",\r\n                        \"name\": \"B2\"\r\n                    },\r\n                    null,\r\n                    {\r\n                        \"id\": \"019a58cb-b132-758b-8249-deac366779f1\",\r\n                        \"name\": \"B3\"\r\n                    }\r\n                ]\r\n            },\r\n            {\r\n                \"row\": \"C\",\r\n                \"priceCategory\": \"recliner\",\r\n                \"layout\": [\r\n                    {\r\n                        \"id\": \"019a58cb-b518-7193-bb07-718ddadde4fe\",\r\n                        \"name\": \"C1\"\r\n                    },\r\n                    {\r\n                        \"id\": \"019a58cb-b8e4-746e-8b37-9b00946dccf3\",\r\n                        \"name\": \"C2\"\r\n                    },\r\n                    null,\r\n                    {\r\n                        \"id\": \"019a58cb-bced-751b-bba2-212c1f90e5a8\",\r\n                        \"name\": \"C3\"\r\n                    }\r\n                ]\r\n            }\r\n        ]\r\n    }\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{baseURL}}/api/shows/019a58ac-21a1-7555-8abf-546a575cb276/seats",
+					"host": [
+						"{{baseURL}}"
+					],
+					"path": [
+						"api",
+						"shows",
+						"019a58ac-21a1-7555-8abf-546a575cb276",
+						"seats"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Seats by showID",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseURL}}/api/shows/019a58ac-21a1-7555-8abf-546a575cb276/seats",
+					"host": [
+						"{{baseURL}}"
+					],
+					"path": [
+						"api",
+						"shows",
+						"019a58ac-21a1-7555-8abf-546a575cb276",
+						"seats"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"requests": {},
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"requests": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseURL",
+			"value": ""
+		}
+	]
+}

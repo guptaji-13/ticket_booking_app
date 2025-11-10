@@ -1,0 +1,344 @@
+{
+	"info": {
+		"_postman_id": "16cedec7-eafc-4ab7-990e-44154a617a04",
+		"name": "Booking Service",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "46777599",
+		"_collection_link": "https://abcxyz-2114953.postman.co/workspace/Abc-Xyz's-Workspace~b5747b00-eb07-4e4e-8866-a2aa4370acc7/collection/46777599-16cedec7-eafc-4ab7-990e-44154a617a04?action=share&source=collection_link&creator=46777599"
+	},
+	"item": [
+		{
+			"name": "Request OTP",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{baseURL}}/api/auth/login/request-otp?phone=7742523456",
+					"host": [
+						"{{baseURL}}"
+					],
+					"path": [
+						"api",
+						"auth",
+						"login",
+						"request-otp"
+					],
+					"query": [
+						{
+							"key": "phone",
+							"value": "7742523456"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Refresh Token",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseURL}}/api/auth/refresh",
+					"host": [
+						"{{baseURL}}"
+					],
+					"path": [
+						"api",
+						"auth",
+						"refresh"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Verify OTP",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"phone\": \"7742523456\",\r\n    \"otp\": \"123456\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{baseURL}}/api/auth/login/otp-verify",
+					"host": [
+						"{{baseURL}}"
+					],
+					"path": [
+						"api",
+						"auth",
+						"login",
+						"otp-verify"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Reserve Seat",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{accessToken}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"bookingKey\": \"743n7v57wb5wvb5o43b\",\r\n    \"eventId\": \"56747567567577556\",\r\n    \"seatIds\": [\r\n        \"64657465745694\", \"767547864576574\"\r\n    ]\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{baseURL}}/api/bookings/reserve",
+					"host": [
+						"{{baseURL}}"
+					],
+					"path": [
+						"api",
+						"bookings",
+						"reserve"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Initiate Payment",
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{accessToken}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"bookingId\": \"521539457992687874\",\r\n    \"provider\": \"razorpay\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{baseURL}}/api/payments/initiate",
+					"host": [
+						"{{baseURL}}"
+					],
+					"path": [
+						"api",
+						"payments",
+						"initiate"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Check payment",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{accessToken}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{baseURL}}/api/payments/check?paymentId=521542612914602243",
+					"host": [
+						"{{baseURL}}"
+					],
+					"path": [
+						"api",
+						"payments",
+						"check"
+					],
+					"query": [
+						{
+							"key": "paymentId",
+							"value": "521542612914602243"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Booking List",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{accessToken}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{baseURL}}/api/bookings/my-bookings",
+					"host": [
+						"{{baseURL}}"
+					],
+					"path": [
+						"api",
+						"bookings",
+						"my-bookings"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Booking by id",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{accessToken}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{baseURL}}/api/bookings/my-bookings/521539457992687874",
+					"host": [
+						"{{baseURL}}"
+					],
+					"path": [
+						"api",
+						"bookings",
+						"my-bookings",
+						"521539457992687874"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Fetch Profile",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "bearer {{accessToken}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{baseURL}}/api/users/profile",
+					"host": [
+						"{{baseURL}}"
+					],
+					"path": [
+						"api",
+						"users",
+						"profile"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Update Profile",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "bearer {{accessToken}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"name\": \"Rahul Gupta\",\r\n    \"email\": \"abc@gmail.com\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{baseURL}}/api/users/update",
+					"host": [
+						"{{baseURL}}"
+					],
+					"path": [
+						"api",
+						"users",
+						"update"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"requests": {},
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"requests": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseURL",
+			"value": ""
+		},
+		{
+			"key": "accessToken",
+			"value": "",
+			"type": "default"
+		}
+	]
+}
