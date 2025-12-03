@@ -46,7 +46,33 @@ export class RedisClient {
 		return result === 1;
 	}
 
-	static async acquireMultipleLocks(keys: string[], ttlSeconds: number): Promise<boolean> {
+	static async delPattern(pattern: string): Promise<number> {
+		const client = this.getClient();
+		let cursor = "0";
+		let deletedCount = 0;
+
+		do {
+			// SCAN for keys in batches to avoid blocking Redis
+			const [newCursor, keys] = await client.scan(cursor, "MATCH", pattern, "COUNT", 100);
+			cursor = newCursor;
+			if (keys.length > 0) {
+				// Pipeline deletes for better performance
+				const pipeline = client.pipeline();
+				keys.forEach((key) => pipeline.del(key));
+
+				const results = await pipeline.exec();
+				// Count how many keys were deleted
+				deletedCount += results?.filter(([err]) => !err)?.length ?? 0;
+			}
+		} while (cursor !== "0");
+		return deletedCount;
+	}
+
+	static async acquireMultipleLocks(
+		keys: string[],
+		value: string,
+		ttlSeconds: number
+	): Promise<boolean> {
 		const client = RedisClient.getClient();
 		const script = `
 			for i, key in ipairs(KEYS) do
@@ -55,11 +81,24 @@ export class RedisClient {
 				end
 			end
 			for i, key in ipairs(KEYS) do
-				redis.call("set", key, "locked", "EX", ARGV[1])
+				redis.call("set", key, ARGV[1], "EX", ARGV[2])
 			end
 			return 1
 		`;
-		const result = await client.eval(script, keys.length, ...keys, ttlSeconds);
+		const result = await client.eval(script, keys.length, ...keys, value, ttlSeconds);
 		return result === 1;
+	}
+
+	// Hast Set field
+	static async hSet(hashKey: string, field: string, value: string): Promise<boolean> {
+		const client = this.getClient();
+		const result = await client.hsetnx(hashKey, field, value);
+		return result === 1;
+	}
+
+	// Delete a field from a hash
+	static async hDel(hashKey: string, field: string): Promise<void> {
+		const client = this.getClient();
+		await client.hdel(hashKey, field);
 	}
 }

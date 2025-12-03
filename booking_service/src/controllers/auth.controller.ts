@@ -1,13 +1,19 @@
 import { AuthService, UsersService } from "../services/index.service.js";
+import { ApiResponse } from "../utils/apiResponse.util.js";
+import { ServiceError } from "../utils/error.util.js";
 
 export class AuthController {
 	static async requestOtp(req: any, res: any) {
 		try {
 			const { phone } = req.query;
 			await AuthService.requestOtp(phone);
-			return res.json({ message: "OTP sent successfully" });
+			return ApiResponse.success(res, { phone }, "OTP sent");
 		} catch (error) {
-			return res.status(500).json({ message: "Internal server error" });
+			console.error("Error in requestOtp:", error);
+			if (error instanceof ServiceError) {
+				return ApiResponse.errorFromCode(res, error.code, error);
+			}
+			return ApiResponse.error(res, "Failed to send OTP", error);
 		}
 	}
 
@@ -38,12 +44,17 @@ export class AuthController {
 				expires: new Date(Number(tokens.refreshExpiresAt)),
 			});
 			res.setHeader("Access-Control-Allow-Credentials", "true");
-			return res.status(200).json({ accessToken: tokens.accessToken, user, newUser });
+			return ApiResponse.success(
+				res,
+				{ accessToken: tokens.accessToken, user, newUser },
+				"OTP verified"
+			);
 		} catch (error) {
 			console.error("Error in verifyOtp:", error);
-			return res
-				.status(500)
-				.json({ message: "Internal server error", reason: (error as Error).message });
+			if (error instanceof ServiceError) {
+				return ApiResponse.errorFromCode(res, error.code, error);
+			}
+			return ApiResponse.error(res, "Failed to verify OTP", error);
 		}
 	}
 
@@ -66,11 +77,15 @@ export class AuthController {
 				expires: new Date(Number(tokens.refreshExpiresAt)),
 			});
 			res.setHeader("Access-Control-Allow-Credentials", "true");
-			return res.json({ accessToken: tokens.accessToken });
-		} catch (err) {
+			return ApiResponse.success(res, { accessToken: tokens.accessToken });
+		} catch (error) {
 			// on any error, clear cookie
 			res.clearCookie("refresh_token", { path: "/auth/refresh" });
-			return res.status(401).json({ message: (err as Error).message || "Invalid refresh" });
+			console.error("Error in createAccessTokenFromRefreshToken:", error);
+			if (error instanceof ServiceError) {
+				return ApiResponse.errorFromCode(res, error.code, error);
+			}
+			return ApiResponse.error(res, "Failed to refresh access token", error);
 		}
 	}
 
@@ -81,9 +96,13 @@ export class AuthController {
 				await AuthService.revokeRefreshToken(rawToken);
 			}
 			res.clearCookie("refresh_token", { path: "/auth/refresh" });
-			res.json({ ok: true });
-		} catch (err) {
-			res.status(500).json({ message: "Logout failed" });
+			return ApiResponse.success(res, null, "Logged out");
+		} catch (error) {
+			console.error("Error in logout:", error);
+			if (error instanceof ServiceError) {
+				return ApiResponse.errorFromCode(res, error.code, error);
+			}
+			return ApiResponse.error(res, "Logout failed", error);
 		}
 	}
 }

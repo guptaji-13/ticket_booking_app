@@ -1,20 +1,15 @@
 // dao
-import { PaymentsDAO, BookingsDAO } from "../dao/index.dao.js";
+import { PaymentsDAO, BookingsDAO, OutboxDAO } from "../dao/index.dao.js";
 
 // types
 import type { Payment } from "../models/index.model.js";
 
-// db connection
-import { db } from "../db/drizzle/index.js";
-
 // utils
 import { ServiceError } from "../utils/error.util.js";
-import { logger } from "../utils/logger.util.js";
 import * as RazorpayHelper from "../utils/razorpay.util.js";
-import { releaseSeatLocks } from "../utils/seatLock.util.js";
 
-// grpc client
-import { EventGrpcClient } from "../grpc/clients/event.grpc.client.js";
+// constants
+import { RedisKeys } from "../constants/redisKeys.js";
 
 export class PaymentsService {
 	static async initiatePayment(payload: any, userId: string) {
@@ -23,33 +18,50 @@ export class PaymentsService {
 			const { bookingId, provider } = payload;
 			const booking = await BookingsDAO.getBookingById(bookingId);
 			if (!booking) {
-				throw new ServiceError("Booking not found", 404);
+				throw new ServiceError("BOOKING_NOT_FOUND");
 			}
 			const amount = booking.totalAmount;
-			// Create payment idempotency key
-			const paymentKey = `PAY-${userId}-${date}`;
-			// initiate payment via provider
-			let txnDetails = null;
+
+			// Idempotency key
+			const paymentKey = `pay_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+
+			// INSERT payment row BEFORE calling Razorpay. This ensures your system NEVER loses payment state.
+			const payment = await PaymentsDAO.createPayment({
+				bookingId,
+				idempotencyKey: paymentKey,
+				userId,
+				provider,
+				amount,
+				status: "initiated",
+				createdAt: date,
+				updatedAt: date,
+			});
+			if (!payment) {
+				throw new ServiceError("PAYMENT_CREATION_FAILED");
+			}
+
+			// Call provider using idempotency key as receipt/metadata
+			let res = null;
 			if (provider === "razorpay") {
-				txnDetails = await RazorpayHelper.initiateRazorpayPayment(amount, paymentKey);
+				res = await RazorpayHelper.initiateRazorpayPayment(amount, paymentKey);
 			}
-			if (txnDetails?.status === "pending") {
-				const payment = await PaymentsDAO.createPayment({
-					bookingId,
-					idempotencyKey: paymentKey,
-					provider,
-					amount,
-					status: "pending",
-					createdAt: date,
-					updatedAt: date,
-					responseData: txnDetails,
+			if (!res || res.status != "pending") {
+				await PaymentsDAO.updatePayment(payment.id, {
+					status: "failed",
+					responseData: res?.responseData ?? null,
+					updatedAt: Date.now(),
 				});
-				return payment;
-			} else {
-				throw new ServiceError("Failed to initiate payment", 500);
+				throw new ServiceError("PAYMENT_INITIATION_FAILED");
 			}
+
+			// If this fails, reconciliation worker WILL FIX IT LATER
+			const updatedPayment = await PaymentsDAO.updatePayment(payment.id, {
+				status: res.status,
+				responseData: res?.responseData ?? null,
+				updatedAt: Date.now(),
+			});
+			return updatedPayment;
 		} catch (error) {
-			logger.error("Error in initiatePayment:", error);
 			throw error;
 		}
 	}
@@ -58,71 +70,83 @@ export class PaymentsService {
 		try {
 			const payment = await PaymentsDAO.getPaymentById(paymentId);
 			if (!payment) {
-				throw new ServiceError("Payment not found", 404);
+				throw new ServiceError("PAYMENT_NOT_FOUND");
 			}
-			if (payment.status !== "pending") {
-				logger.info("Payment already finalized with status:", payment.status);
+
+			// If already processed, return directly (idempotent)
+			if (payment.status === "success" || payment.status === "failed") {
 				return payment;
 			}
-			let status: Payment["status"] = payment.status;
-			let responseData = null;
+
+			// Fetch provider status
+			let providerStatus = payment.status as Payment["status"];
+			let providerData = payment.responseData ?? null;
+
 			if (payment.provider === "razorpay") {
-				const razorpayStatus = await RazorpayHelper.fetchRazorpayPaymentStatus(
-					payment.idempotencyKey
-				);
-				status = razorpayStatus.status;
-				responseData = razorpayStatus.responseData;
+				const res = await RazorpayHelper.fetchRazorpayPaymentStatus(payment.idempotencyKey);
+				if (res?.status) providerStatus = res.status;
+				if (res?.responseData) providerData = res.responseData;
 			}
-			if (status !== payment.status) {
-				await db.transaction(async (txn) => {
-					try {
-						let data: Partial<Payment> = {};
-						data.status = status;
-						if (responseData) data.responseData = responseData;
-						await PaymentsDAO.updatePayment(payment.id, data, txn);
-						const updatedBooking = await BookingsDAO.updateBookingStatus(
-							payment.bookingId,
-							status,
-							txn
-						);
-						if (!updatedBooking) {
-							throw new ServiceError("Associated booking not found", 404);
-						}
-						if (status === "success") {
-							await EventGrpcClient.updateSeatsStatus(
-								updatedBooking.eventId,
-								updatedBooking.seatIds,
-								"booked"
-							);
-						}
-						await releaseSeatLocks(
-							updatedBooking.eventId,
-							updatedBooking.seatIds,
-							updatedBooking.userId
-						);
-					} catch (error) {
-						txn.rollback();
-						logger.error("Error in transaction:", error);
-						throw new ServiceError("Transaction failed", 500);
-					}
+
+			// If status unchanged → do nothing
+			if (providerStatus === payment.status) {
+				return payment;
+			}
+
+			// 1️⃣ Update payment status (MUST NOT rollback if worker fails later)
+			await PaymentsDAO.updatePayment(payment.id, {
+				status: providerStatus,
+				responseData: providerData,
+				updatedAt: Date.now(),
+			});
+
+			const booking = await BookingsDAO.getBookingById(payment.bookingId);
+			if (!booking) {
+				throw new ServiceError("BOOKING_NOT_FOUND");
+			}
+			// 2️⃣ Insert outbox event WHEN status becomes SUCCESS
+			if (providerStatus === "success") {
+				await OutboxDAO.addEvent({
+					eventType: "payment_confirmed",
+					aggregateId: payment.id,
+					payload: {
+						paymentId: payment.id,
+						bookingId: payment.bookingId,
+						userId: payment.userId,
+						amount: payment.amount,
+						provider: payment.provider,
+						timestamp: Date.now(),
+					},
 				});
 			}
-			return { ...payment, status };
-		} catch (error) {
-			logger.error("Error in checkPaymentStatus:", error);
-			throw error;
-		}
-	}
 
-	static async updatePaymentStatus(paymentId: string, status: string) {
-		try {
-			const payment = await PaymentsDAO.updatePayment(paymentId, { status: status as any });
-			if (!payment) {
-				throw new ServiceError("Payment not found", 404);
+			// 3️⃣ If payment failed → Update payment status
+			if (providerStatus === "failed") {
+				await PaymentsDAO.updatePayment(payment.id, {
+					status: providerStatus,
+					responseData: providerData,
+					updatedAt: Date.now(),
+				});
+				await OutboxDAO.addEvent({
+					eventType: "payment_failed",
+					aggregateId: payment.id,
+					payload: {
+						paymentId: payment.id,
+						bookingId: payment.bookingId,
+						userId: payment.userId,
+						amount: payment.amount,
+						provider: payment.provider,
+						timestamp: Date.now(),
+					},
+				});
 			}
-			return payment;
+
+			return {
+				...payment,
+				status: providerStatus,
+				responseData: providerData,
+			};
 		} catch (error) {
-			logger.error("Error in updatePaymentStatus:", error);
 			throw error;
 		}
 	}

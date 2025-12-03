@@ -3,13 +3,14 @@ import { eq, desc, sql } from "drizzle-orm";
 import { paymentsTable } from "../db/drizzle/index.js";
 import type { Payment } from "../models/index.model.js";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
+import { generateSnowflake } from "../utils/snowflake.util.js";
 
 export class PaymentsDAO {
 	static async createPayment(payment: Omit<Payment, "id">): Promise<Payment | null> {
 		const result = (await db
 			.insert(paymentsTable)
 			.values({
-				id: sql`generate_snowflake_id(${1}, ${1})`,
+				id: generateSnowflake(),
 				...payment,
 			})
 			.returning()) as Payment[];

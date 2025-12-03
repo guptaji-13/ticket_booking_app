@@ -1,9 +1,9 @@
 export interface Booking {
 	id: string;
-	eventId: string;
+	showId: string;
 	userId: string;
 	seatIds: string[]; // array of seat IDs
-	status: "pending" | "success" | "failed";
+	status: "pending" | "confirmed" | "failed" | "expired" | "cancelled" | "refunded";
 	idempotencyKey: string;
 	totalAmount: number;
 	createdAt: number;

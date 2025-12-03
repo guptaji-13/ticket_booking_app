@@ -1,8 +1,9 @@
 import { db } from "../db/drizzle/index.js";
-import { eq, desc, sql } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import { bookingsTable } from "../db/drizzle/index.js";
 import type { Booking } from "../models/index.model.js";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
+import { generateSnowflake } from "../utils/snowflake.util.js";
 
 export class BookingsDAO {
 	static async createBooking(booking: Omit<Booking, "id">): Promise<Booking | null> {
@@ -10,7 +11,7 @@ export class BookingsDAO {
 			const result = (await db
 				.insert(bookingsTable)
 				.values({
-					id: sql`generate_snowflake_id(${1}, ${1})`,
+					id: generateSnowflake(),
 					...booking,
 				})
 				.returning()) as Booking[];

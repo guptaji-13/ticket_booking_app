@@ -2,6 +2,7 @@ import { db } from "../db/drizzle/index.js";
 import { eq, sql } from "drizzle-orm";
 import { usersTable } from "../db/drizzle/index.js";
 import type { User } from "../models/users.model.js";
+import { generateSnowflake } from "../utils/snowflake.util.js";
 
 export class UsersDAO {
 	static async createUser(user: Omit<User, "id">): Promise<User | null> {
@@ -9,7 +10,7 @@ export class UsersDAO {
 			const result = (await db
 				.insert(usersTable)
 				.values({
-					id: sql`generate_snowflake_id(${1}, ${1})`,
+					id: generateSnowflake(),
 					...user,
 				})
 				.returning()) as User[];

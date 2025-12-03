@@ -1,0 +1,13 @@
+{
+    "name": "cassandra-cdc-source-connector",
+    "config": {
+        "connector.class": "com.datastax.oss.kafka.sink.CassandraSinkConnector",
+        "tasks.max": "1",
+        "contactPoints": "cassandra",
+        "loadBalancing.localDc": "datacenter1",
+        "port": "9042",
+        "topic.prefix": "cassandra_events.",
+        "cdc.dir": "/var/lib/cassandra/cdc_raw",
+        "keyspace": "event_service"
+    }
+}

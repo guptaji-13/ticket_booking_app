@@ -2,3 +2,8 @@ export type { Booking } from "./bookings.model.js";
 export type { Payment } from "./payments.model.js";
 export type { User } from "./users.model.js";
 export type { RefreshToken } from "./refreshTokens.model.js";
+export type { Venue } from "./venues.model.js";
+export type { Event } from "./events.model.js";
+export type { Screen } from "./screens.model.js";
+export type { Show } from "./shows.model.js";
+export type { Seat } from "./seats.model.js";

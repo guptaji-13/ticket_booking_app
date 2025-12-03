@@ -1,20 +1,25 @@
 import { BookingsService } from "../services/index.service.js";
+import { ApiResponse } from "../utils/apiResponse.util.js";
+import { ServiceError } from "../utils/error.util.js";
 
 export class BookingsController {
 	static async initiateBooking(req: any, res: any) {
 		try {
 			const userId = req.user.id;
-			const { bookingKey, eventId, seatIds } = req.body;
+			const { bookingKey, showId, seatIds } = req.body;
 			const booking = await BookingsService.createBooking({
 				userId,
 				bookingKey,
-				eventId,
+				showId,
 				seatIds,
 			});
-			return res.status(201).json(booking);
+			return ApiResponse.success(res, booking);
 		} catch (error) {
-			console.log(error);
-			return res.status(500).json({ message: "Internal server error" });
+			console.error("Error in initiateBooking:", error);
+			if (error instanceof ServiceError) {
+				return ApiResponse.errorFromCode(res, error.code, error);
+			}
+			return ApiResponse.error(res, "Failed to initiate booking", error);
 		}
 	}
 
@@ -22,9 +27,13 @@ export class BookingsController {
 		try {
 			const userId = req.user.id;
 			const bookings = await BookingsService.getBookingsByUserId(userId);
-			return res.json(bookings);
+			return ApiResponse.success(res, bookings);
 		} catch (error) {
-			return res.status(500).json({ message: "Internal server error" });
+			console.error("Error in getUserBookings:", error);
+			if (error instanceof ServiceError) {
+				return ApiResponse.errorFromCode(res, error.code, error);
+			}
+			return ApiResponse.error(res, "Failed to retrieve user bookings", error);
 		}
 	}
 
@@ -32,20 +41,27 @@ export class BookingsController {
 		try {
 			const bookingId = req.params.id;
 			const booking = await BookingsService.getBookingById(bookingId);
-			return res.json(booking);
+			return ApiResponse.success(res, booking);
 		} catch (error) {
-			return res.status(500).json({ message: "Internal server error" });
+			console.error("Error in getBookingById:", error);
+			if (error instanceof ServiceError) {
+				return ApiResponse.errorFromCode(res, error.code, error);
+			}
+			return ApiResponse.error(res, "Failed to retrieve booking", error);
 		}
 	}
 
-	static async getSeatLayoutByEventId(req: any, res: any) {
+	static async getSeatLayoutByShowId(req: any, res: any) {
 		try {
-			const eventId = req.params.eventId;
-			const seatLayout = await BookingsService.getSeatLayoutByEventId(eventId);
-			return res.json(seatLayout);
+			const showId = req.params.showId;
+			const seatLayout = await BookingsService.getSeatLayoutByShowId(showId);
+			return ApiResponse.success(res, seatLayout);
 		} catch (error) {
-			console.log(error);
-			return res.status(500).json({ message: "Internal server error" });
+			console.error("Error in getSeatLayoutByShowId:", error);
+			if (error instanceof ServiceError) {
+				return ApiResponse.errorFromCode(res, error.code, error);
+			}
+			return ApiResponse.error(res, "Failed to retrieve seat layout", error);
 		}
 	}
 }

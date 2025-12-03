@@ -1,4 +1,6 @@
 import { UsersService } from "../services/index.service.js";
+import { ApiResponse } from "../utils/apiResponse.util.js";
+import { ServiceError } from "../utils/error.util.js";
 
 export class UsersController {
 	static async getProfile(req: any, res: any) {
@@ -6,11 +8,14 @@ export class UsersController {
 			const userId = req.user.id;
 			const user = await UsersService.getUserById(userId);
 			if (!user) throw Error("User not found");
-			console.log(user);
-			return res.status(200).json(user);
+
+			return ApiResponse.success(res, user);
 		} catch (error) {
 			console.error("Error fetching profile: ", error);
-			return res.status(500).json({ error: "Failed to fetch profile" });
+			if (error instanceof ServiceError) {
+				return ApiResponse.errorFromCode(res, error.code, error);
+			}
+			return ApiResponse.error(res, "Failed to fetch profile", error);
 		}
 	}
 	static async updateUser(req: any, res: any) {
@@ -18,10 +23,13 @@ export class UsersController {
 			const userId = req.user.id;
 			const { name, email } = req.body;
 			const updatedUser = await UsersService.updateUser(userId, { name, email });
-			return res.json(updatedUser);
+			return ApiResponse.success(res, updatedUser);
 		} catch (error) {
 			console.error("Error updating user:", error);
-			return res.status(500).json({ error: "Failed to update user" });
+			if (error instanceof ServiceError) {
+				return ApiResponse.errorFromCode(res, error.code, error);
+			}
+			return ApiResponse.error(res, "Failed to update user", error);
 		}
 	}
 }

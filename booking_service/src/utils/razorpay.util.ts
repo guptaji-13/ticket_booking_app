@@ -3,12 +3,10 @@ import type { Payment } from "../models/index.model.js";
 export async function initiateRazorpayPayment(amount: number, idempotencyKey: string) {
 	// Placeholder for Razorpay payment initiation logic
 	return {
-		id: `razorpay_${idempotencyKey}`,
-		amount,
-		currency: "INR",
-		status: "pending",
+		status: "pending" as Payment["status"], // | failed
 		responseData: {
 			orderId: `order_${idempotencyKey}`,
+			paymentId: `pay_${idempotencyKey}`,
 			amount,
 			currency: "INR",
 			status: "initiated",
@@ -18,9 +16,8 @@ export async function initiateRazorpayPayment(amount: number, idempotencyKey: st
 
 export async function fetchRazorpayPaymentStatus(paymentId: string) {
 	// Placeholder for fetching Razorpay payment status logic
-	const status: Payment["status"] = "success"; // Example status
+	const status = "success" as Payment["status"]; // Example status
 	return {
-		id: paymentId,
 		status,
 		responseData: {
 			// Sample response data
@@ -35,8 +32,7 @@ export async function fetchRazorpayPaymentStatus(paymentId: string) {
 export async function cancelRazorpayPayment(paymentId: string) {
 	// Placeholder for cancelling Razorpay payment logic
 	return {
-		id: paymentId,
-		status: "failed",
+		status: "failed" as Payment["status"],
 		responseData: {
 			status: "cancelled",
 			reason: "Cancelled by user",

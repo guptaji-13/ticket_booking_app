@@ -1,12 +1,20 @@
+import { ErrorCatalog, type ErrorCode } from "../constants/errorMessages.js";
+
 export class ServiceError extends Error {
-	statusCode: number;
+	status: number;
+	code: ErrorCode;
+	cause?: any;
 
-	constructor(message: string, statusCode = 400) {
-		super(message);
-		this.statusCode = statusCode;
+	constructor(code: ErrorCode, options?: { cause?: any }) {
+		super(ErrorCatalog[code].message);
+
+		this.name = "ServiceError";
+		this.code = code;
+		this.status = ErrorCatalog[code].status;
+		this.cause = options?.cause;
+
+		if (Error.captureStackTrace) {
+			Error.captureStackTrace(this, ServiceError);
+		}
 	}
-}
-
-export function throwIf(condition: boolean, message: string, code = 400) {
-	if (condition) throw new ServiceError(message, code);
 }
